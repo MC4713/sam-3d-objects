@@ -9,12 +9,19 @@ from torch.utils._pytree import tree_map_only
 
 
 def set_attention_backend():
+    """
+    Choose attention backend based on GPU. Be defensive if CUDA is unavailable or misconfigured.
+    """
+    gpu_name = "CPU"
     if torch.cuda.is_available():
-        gpu_name = torch.cuda.get_device_name(0)
+        try:
+            gpu_name = torch.cuda.get_device_name(0)
+        except Exception as exc:  # pragma: no cover - best effort logging
+            logger.warning(f"Could not query CUDA device name: {exc}")
+            gpu_name = "Unknown-CUDA"
 
     logger.info(f"GPU name is {gpu_name}")
-    if "A100" in gpu_name or "H100" in gpu_name or "H200" in gpu_name:
-        # logger.info("Use flash_attn")
+    if any(x in gpu_name for x in ("A100", "H100", "H200")):
         os.environ["ATTN_BACKEND"] = "flash_attn"
         os.environ["SPARSE_ATTN_BACKEND"] = "flash_attn"
 
