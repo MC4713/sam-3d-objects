@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Lightweight launcher for the SAM3D multi-object stream watcher.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON_BIN="${PYTHON:-python3}"
+
+CONFIG="${CONFIG:-$ROOT/checkpoints/hf/pipeline.yaml}"
+INPUT_ROOT="${INPUT_ROOT:-$ROOT/snapshots}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-$ROOT/notebook/gaussians/multi}"
+
+exec "$PYTHON_BIN" "$ROOT/notebook/gaussian_stream.py" \
+  --config "$CONFIG" \
+  --input-root "$INPUT_ROOT" \
+  --output-root "$OUTPUT_ROOT" \
+  "$@"

@@ -1,4 +1,5 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
+import os
 import torch
 import numpy as np
 from plyfile import PlyData, PlyElement
@@ -133,8 +134,31 @@ class Gaussian:
             l.append("rot_{}".format(i))
         return l
 
-    def save_ply(self, path):
+    def save_ply(
+        self,
+        path,
+        flip_x_for_viewer: bool = True,
+        flip_y_for_viewer: bool = True,
+        flip_z_for_viewer: bool = False,
+    ):
+        # Allow flipping axes for viewers (e.g., Brush) that may expect different handedness.
+        env_flip_x = os.environ.get("BRUSH_FLIP_X")
+        if env_flip_x is not None:
+            flip_x_for_viewer = env_flip_x.lower() in ("1", "true", "yes", "y")
+        env_flip = os.environ.get("BRUSH_FLIP_Y")
+        if env_flip is not None:
+            flip_y_for_viewer = env_flip.lower() in ("1", "true", "yes", "y")
+        env_flip_z = os.environ.get("BRUSH_FLIP_Z")
+        if env_flip_z is not None:
+            flip_z_for_viewer = env_flip_z.lower() in ("1", "true", "yes", "y")
+
         xyz = self.get_xyz.detach().cpu().numpy()
+        if flip_x_for_viewer:
+            xyz[:, 0] *= -1
+        if flip_y_for_viewer:
+            xyz[:, 1] *= -1
+        if flip_z_for_viewer:
+            xyz[:, 2] *= -1
         normals = np.zeros_like(xyz)
         f_dc = (
             self._features_dc.detach()

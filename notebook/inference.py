@@ -2,10 +2,13 @@
 import os
 
 # not ideal to put that here
-os.environ["CUDA_HOME"] = os.environ["CONDA_PREFIX"]
+# Use an existing CUDA_HOME if set, otherwise fall back to conda prefix or system default.
+os.environ["CUDA_HOME"] = os.environ.get("CUDA_HOME", os.environ.get("CONDA_PREFIX", "/usr/local/cuda-12.8"))
 os.environ["LIDRA_SKIP_INIT"] = "true"
 
 import sys
+import logging
+import time
 from typing import Union, Optional, List, Callable
 import numpy as np
 from PIL import Image
@@ -33,7 +36,7 @@ from sam3d_objects.model.backbone.tdfy_dit.utils import render_utils
 
 from sam3d_objects.utils.visualization import SceneVisualizer
 
-__all__ = ["Inference"]
+__all__ = ["Inference", "debug_inference_and_save"]
 
 WHITELIST_FILTERS = [
     lambda target: target.split(".", 1)[0] in {"sam3d_objects", "torch", "torchvision", "moge"},
@@ -104,6 +107,7 @@ class Inference:
         mask: Optional[Union[None, Image.Image, np.ndarray]],
         seed: Optional[int] = None,
         pointmap=None,
+        stage1_inference_steps: Optional[int] = None,
     ) -> dict:
         image = self.merge_mask_to_rgba(image, mask)
         return self._pipeline.run(
@@ -115,9 +119,60 @@ class Inference:
             with_texture_baking=False,
             with_layout_postprocess=True,
             use_vertex_color=True,
-            stage1_inference_steps=None,
+            stage1_inference_steps=stage1_inference_steps,
             pointmap=pointmap,
         )
+
+
+def _log_cuda_state(logger: logging.Logger):
+    logger.info(
+        "cuda available=%s count=%s",
+        torch.cuda.is_available(),
+        torch.cuda.device_count(),
+    )
+    if torch.cuda.is_available():
+        for i in range(torch.cuda.device_count()):
+            logger.info(
+                "dev%d name=%s mem_alloc=%s mem_reserved=%s",
+                i,
+                torch.cuda.get_device_name(i),
+                torch.cuda.memory_allocated(i),
+                torch.cuda.memory_reserved(i),
+            )
+
+
+def debug_inference_and_save(
+    inference_fn: Callable,
+    image,
+    mask,
+    out_dir: str,
+    image_name: str,
+    seed: int = 42,
+):
+    """
+    Helper to run inference with logging and capture failures.
+    """
+    logger = logging.getLogger("inference_debug")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+    try:
+        _log_cuda_state(logger)
+        t0 = time.time()
+        output = inference_fn(image, mask, seed=seed)
+        logger.info("inference finished in %.2fs", time.time() - t0)
+        os.makedirs(out_dir, exist_ok=True)
+        ply_path = os.path.join(out_dir, f"{image_name}.ply")
+        output["gs"].save_ply(ply_path)
+        logger.info("PLY saved to %s", ply_path)
+        return output
+    except Exception:
+        logger.exception("Inference failed")
+        _log_cuda_state(logger)
+        raise
 
 
 def _yaw_pitch_r_fov_to_extrinsics_intrinsics(yaws, pitchs, rs, fovs):
