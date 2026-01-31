@@ -1,0 +1,16 @@
+{
+  "image_path": "/home/mnc/Downloads/IMG_3792.jpg",
+  "backend": "sam2_repo",
+  "mode": "mixed",
+  "objects": 1,
+  "n_pos": 1,
+  "n_neg": 0,
+  "multimask": false,
+  "out_root": "/home/mnc/mccv/sam-3d-objects/outputs/IMG_3792/20260131_162006",
+  "masks": [
+    "/home/mnc/mccv/sam-3d-objects/outputs/IMG_3792/20260131_162006/masks/0.png"
+  ],
+  "modes": [
+    "points"
+  ]
+}
