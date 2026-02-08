@@ -1,0 +1,18 @@
+{
+  "source": "rtsp://192.168.5.201:8554/cam1",
+  "captured_at": "20260208_124247_170",
+  "backend": "sam2_repo",
+  "mode": "points",
+  "objects": 1,
+  "n_pos": 1,
+  "n_neg": 0,
+  "multimask": false,
+  "frame": "/home/mnc/mccv/sam-3d-objects/outputs/192.168.5.201_8554_cam1_20260208_124247_170/20260208_124247/frame.png",
+  "out_root": "/home/mnc/mccv/sam-3d-objects/outputs/192.168.5.201_8554_cam1_20260208_124247_170/20260208_124247",
+  "masks": [
+    "/home/mnc/mccv/sam-3d-objects/outputs/192.168.5.201_8554_cam1_20260208_124247_170/20260208_124247/masks/0.png"
+  ],
+  "modes": [
+    "points"
+  ]
+}
